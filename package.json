@@ -19,7 +19,7 @@
     "update-node-base": "npx @juitnow/cmd-node-base --release",
     "updates": "rm -rf node_modules package-lock.json && npx @juitnow/cmd-check-updates --extend --bump && npm install"
   },
-  "dependencies": {
+  "optionalDependencies": {
     "package-json": "^6.5.0",
     "semver": "^7.3.2",
     "yargs": "^16.0.3"
