@@ -1,6 +1,6 @@
 {
   "name": "@juitnow/cmd-check-updates",
-  "version": "1.0.2",
+  "version": "1.0.0",
   "description": "Small and fast utility to update package dependencies",
   "author": "Team Juit <developers@juit.com>",
   "license": "UNLICENSED",
@@ -17,27 +17,24 @@
     "lintfix": "npm run lint -- --fix",
     "test": "mocha 'test/**/*.test.{ts,js}' || false",
     "update-node-base": "npx @juitnow/cmd-node-base --release",
-    "updates": "rm -rf node_modules package-lock.json && npx npm-check-updates -u && npm install"
+    "updates": "rm -rf node_modules package-lock.json && npx @juitnow/cmd-check-updates --bump && npm install"
+  },
+  "dependencies": {
+    "package-json": "^6.5.0",
+    "semver": "^7.3.2",
+    "yargs": "^16.0.3"
   },
   "devDependencies": {
     "babel-eslint": "^10.1.0",
-    "chai-as-promised": "^7.1.1",
     "chai": "^4.2.0",
+    "chai-as-promised": "^7.1.1",
+    "eslint": "^7.9.0",
     "eslint-config-google": "^0.14.0",
     "eslint-plugin-import": "^2.22.0",
-    "eslint": "^7.9.0",
     "mocha": "^8.1.3",
     "nyc": "^15.1.0",
-    "package-json": "^6.5.0",
-    "semver": "^7.3.2",
-    "source-map-support": "^0.5.19",
-    "yargs": "^16.0.3"
+    "source-map-support": "^0.5.19"
   },
-  "bundleDependencies": [
-    "package-json",
-    "semver",
-    "yargs"
-  ],
   "directories": {
     "test": "test"
   },
