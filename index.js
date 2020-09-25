@@ -122,13 +122,6 @@ async function processPackage(file) {
     console.log(` * ${Y}${name.padEnd(lname)}${K}  :  ${G}${from.padStart(lfrom)}${K} -> ${G}${to.padEnd(lto)} ${B}${kind}${K}`)
   }
 
-  /* Bump the version number if we have to */
-  if (data.version && bump) {
-    const bumped = semver.inc(data.version, bump)
-    console.log(`Bumping ${Y}${bump}${K} version: ${G}${data.version}${K} -> ${G}${bumped}${K}`)
-    data.version = bumped
-  }
-
   /* Write out the new package file */
   if (dryRun) {
     console.log(`Dry run, not writing ${G}${file}${K}`)
@@ -153,7 +146,7 @@ async function processPackages(...files) {
  * CALL UP MAIN() AND DEAL WITH THE ASYNC PROMISE IT RETURNS                  *
  * ========================================================================== */
 /* Parse command line arguments */
-const { strict, bump, debug: dbg, dryRun, _: files } = require('yargs')
+const { strict, debug: dbg, dryRun, _: files } = require('yargs')
     .usage('check-updates [--options ...] [package.json ...]')
     .help('h').alias('h', 'help').alias('v', 'version')
     .option('strict', {
@@ -162,15 +155,6 @@ const { strict, bump, debug: dbg, dryRun, _: files } = require('yargs')
       description: [
         'Strictly adhere to semver rules for tilde (~x.y.z)',
         'and caret (^x.y.z) dependency ranges',
-      ].join('\n'),
-    })
-    .option('bump', {
-      alias: 'b',
-      type: 'string',
-      coerce: (value) => value || 'patch',
-      description: [
-        'Bump the package\'s own (major, minor, patch, ...)',
-        'version on changes (assumes "patch" when specified)',
       ].join('\n'),
     })
     .option('debug', {
