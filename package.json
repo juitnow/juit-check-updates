@@ -17,7 +17,7 @@
     "lintfix": "npm run lint -- --fix",
     "test": "mocha 'test/**/*.test.{ts,js}' || false",
     "update-node-base": "npx @juitnow/cmd-node-base --release",
-    "updates": "rm -rf node_modules package-lock.json && npx @juitnow/cmd-check-updates --bump && npm install"
+    "updates": "rm -rf node_modules package-lock.json && npx @juitnow/cmd-check-updates && npm install"
   },
   "dependencies": {
     "package-json": "^6.5.0",
