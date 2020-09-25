@@ -154,7 +154,7 @@ async function processPackages(...files) {
  * ========================================================================== */
 /* Parse command line arguments */
 const { strict, bump, debug: dbg, dryRun, _: files } = require('yargs')
-    .usage(`check-updates [--options ...] [package.json ...]`)
+    .usage('check-updates [--options ...] [package.json ...]')
     .help('h').alias('h', 'help').alias('v', 'version')
     .option('strict', {
       alias: 's',
@@ -162,7 +162,7 @@ const { strict, bump, debug: dbg, dryRun, _: files } = require('yargs')
       description: [
         'Strictly adhere to semver rules for tilde (~x.y.z)',
         'and caret (^x.y.z) dependency ranges',
-      ].join('\n')
+      ].join('\n'),
     })
     .option('bump', {
       alias: 'b',
@@ -171,7 +171,7 @@ const { strict, bump, debug: dbg, dryRun, _: files } = require('yargs')
       description: [
         'Bump the package\'s own (major, minor, patch, ...)',
         'version on changes (assumes "patch" when specified)',
-      ].join('\n')
+      ].join('\n'),
     })
     .option('debug', {
       alias: 'd',
@@ -184,7 +184,7 @@ const { strict, bump, debug: dbg, dryRun, _: files } = require('yargs')
     })
     .epilogue([
       'A number of "package.json" files can be specified on the command line.\n',
-      'When no files are specified, the default is to process the "package.json" file in the current directory'
+      'When no files are specified, the default is to process the "package.json" file in the current directory',
     ].join('\n'))
     .strict()
     .argv
