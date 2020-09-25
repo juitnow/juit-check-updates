@@ -1,0 +1,6 @@
+.*
+build/
+coverage/
+lambda.zip
+node_modules/
+test/
