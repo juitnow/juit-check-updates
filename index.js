@@ -49,7 +49,7 @@ async function updateDependency(name, rangeString) {
 
   const [ , specifier, version ] = match
 
-  if (extend) {
+  if (! strict) {
     const r = rangeString
     rangeString = `>=${version}`
     if (specifier === '~') rangeString += ` <${semver.inc(version, 'major')}`
@@ -82,6 +82,7 @@ async function processPackage(file) {
   const changes = []
   for (const type in data) {
     if (! type.match(/[dD]ependencies$/)) continue
+    if (type.match(/bundled?Dependencies/)) continue
 
     const kind = type.length > 12 ? ` [${type.slice(0, -12)}]` : ''
 
@@ -152,20 +153,25 @@ async function processPackages(...files) {
  * CALL UP MAIN() AND DEAL WITH THE ASYNC PROMISE IT RETURNS                  *
  * ========================================================================== */
 /* Parse command line arguments */
-const { extend, bump, debug: dbg, dryRun, _: files } = require('yargs')
+const { strict, bump, debug: dbg, dryRun, _: files } = require('yargs')
+    .usage(`check-updates [--options ...] [package.json ...]`)
     .help('h').alias('h', 'help').alias('v', 'version')
-    .option('extend', {
-      alias: 'x',
+    .option('strict', {
+      alias: 's',
       type: 'boolean',
-      description: 'Extend the meaning of caret (^) to update major\nversions' +
-        ' and of tilde (~) to include minor versions',
+      description: [
+        'Strictly adhere to semver rules for tilde (~x.y.z)',
+        'and caret (^x.y.z) dependency ranges',
+      ].join('\n')
     })
     .option('bump', {
       alias: 'b',
       type: 'string',
       coerce: (value) => value || 'patch',
-      description: 'Bump the package\'s own (major, minor, patch, ...)\nversion' +
-        'on changes, assuming "patch" when used without\nspecifying the modifier',
+      description: [
+        'Bump the package\'s own (major, minor, patch, ...)',
+        'version on changes (assumes "patch" when specified)',
+      ].join('\n')
     })
     .option('debug', {
       alias: 'd',
@@ -176,6 +182,10 @@ const { extend, bump, debug: dbg, dryRun, _: files } = require('yargs')
       type: 'boolean',
       description: 'Only process changes without writing to disk',
     })
+    .epilogue([
+      'A number of "package.json" files can be specified on the command line.\n',
+      'When no files are specified, the default is to process the "package.json" file in the current directory'
+    ].join('\n'))
     .strict()
     .argv
 
