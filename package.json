@@ -1,6 +1,6 @@
 {
   "name": "@juitnow/cmd-check-updates",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Small and fast utility to update package dependencies",
   "author": "Team Juit <developers@juit.com>",
   "license": "UNLICENSED",
@@ -33,7 +33,7 @@
     "source-map-support": "^0.5.19",
     "yargs": "^16.0.3"
   },
-  "bundledDependencies": [
+  "bundleDependencies": [
     "package-json",
     "semver",
     "yargs"
