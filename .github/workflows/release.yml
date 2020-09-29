@@ -2,7 +2,7 @@ name: Release Package
 
 on:
   push:
-    branches: [master,trunk]
+    branches: [trunk]
 
 jobs:
   release:

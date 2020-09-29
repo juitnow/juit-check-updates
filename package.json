@@ -1,6 +1,6 @@
 {
   "name": "@juitnow/cmd-check-updates",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Small and fast utility to update package dependencies",
   "author": "Team Juit <developers@juit.com>",
   "license": "UNLICENSED",
@@ -12,11 +12,11 @@
     "build": "npm run lint -- --cache && npm run coverage",
     "bump": "bash -c 'npm --no-git-tag-version version ${1:-patch}' --",
     "coverage": "nyc --reporter=html --reporter=text npm run test",
-    "dev": "npx nodemon -x npm run build",
+    "dev": "npx nodemon -i dist -e js,json,ts -x npm run build",
     "lint": "eslint --ext .js --ext .ts .",
     "lintfix": "npm run lint -- --fix",
     "test": "mocha 'test/**/*.test.{ts,js}' || false",
-    "update-node-base": "npx @juitnow/cmd-node-base --release",
+    "update-node-base": "npx @juitnow/cmd-node-base --release --replace && npm run updates",
     "updates": "rm -rf node_modules package-lock.json && npx @juitnow/cmd-check-updates && npm install"
   },
   "dependencies": {
@@ -28,9 +28,9 @@
     "babel-eslint": "^10.1.0",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
-    "eslint": "^7.9.0",
+    "eslint": "^7.10.0",
     "eslint-config-google": "^0.14.0",
-    "eslint-plugin-import": "^2.22.0",
+    "eslint-plugin-import": "^2.22.1",
     "mocha": "^8.1.3",
     "nyc": "^15.1.0",
     "source-map-support": "^0.5.19"

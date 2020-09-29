@@ -35,4 +35,5 @@ jobs:
           commit-message: Automatic update of package dependencies
           committer: Team Juit <developers@juit.com>
           title: Automatic update of package dependencies
+          team-reviewers: reviewers
           branch: auto-update
