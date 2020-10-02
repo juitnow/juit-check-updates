@@ -21,3 +21,7 @@ report-dir: ./coverage
 produce-source-map: true
 preserve-comments: false
 cache: false
+include:
+  - "src/**"
+extension:
+  - ".ts"

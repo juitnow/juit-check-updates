@@ -56,3 +56,24 @@ overrides:
       import/no-extraneous-dependencies:
         - error
         - devDependencies: true
+  - files: '**/*.ts'
+    plugins:
+      - eslint-plugin-tsdoc
+    extends:
+      - plugin:import/typescript
+      - plugin:@typescript-eslint/recommended
+    parser: '@typescript-eslint/parser'
+    parserOptions:
+      sourceType: module
+    rules:
+      indent: off # conflicts with @typescript-eslint/indent
+      no-undef: off # conflicts with automatically imported types
+      valid-jsdoc: off # conflicts with tsdoc/syntax
+      tsdoc/syntax: error
+      '@typescript-eslint/explicit-module-boundary-types': off
+      '@typescript-eslint/indent':
+        - error
+        - 2
+      '@typescript-eslint/no-explicit-any': off
+      '@typescript-eslint/no-unused-vars': error
+      '@typescript-eslint/no-var-requires': off
