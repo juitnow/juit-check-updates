@@ -1,13 +1,13 @@
 {
   "name": "@juitnow/cmd-check-updates",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Small and fast utility to update package dependencies",
   "author": "Team Juit <developers@juit.com>",
   "license": "UNLICENSED",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "check-updates": "index.js"
+    "check-updates": "check-updates.js"
   },
   "scripts": {
     "build": "npm run lint -- --cache && npm run compile && npm run coverage",
@@ -22,6 +22,7 @@
     "updates": "rm -rf node_modules package-lock.json && npx @juitnow/cmd-check-updates && npm install"
   },
   "dependencies": {
+    "glob": "^7.1.6",
     "package-json": "^6.5.0",
     "semver": "^7.3.2",
     "yargs": "^16.0.3"
