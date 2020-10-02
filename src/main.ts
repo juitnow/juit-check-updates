@@ -35,7 +35,7 @@ const { bump, strict, debug, dryrun, _: files = [] } = yargs
     description: 'Only process changes without writing to disk',
   })
   .epilogue([
-    'A number of "package.json" files can be specified on the command line.\n',
+    'Multiple files (or globs) can be specified on the command line.\n',
     'When no files are specified, the default is to process the "package.json" file in the current directory',
   ].join('\n'))
   .strict()
