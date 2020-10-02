@@ -90,7 +90,6 @@ export default async function processPackages(
    * Process a list of glob patterns and return all matching files            *
    * ------------------------------------------------------------------------ */
   async function find(...patterns: string[]) {
-    console.log('Patterns', patterns)
     const files: string[] = []
     for (const pattern of patterns) {
       await new Promise((resolve, reject) => {
@@ -101,7 +100,7 @@ export default async function processPackages(
         })
       })
     }
-    return files
+    return files.filter((file, index, files) => files.indexOf(file) === index)
   }
 
   /* ------------------------------------------------------------------------ *
