@@ -8,7 +8,7 @@ import yargs from 'yargs'
  * ========================================================================== */
 
 /* Parse command line arguments */
-const { bump, strict, debug, dryrun, _: files = [] } = yargs
+const { bump, strict, debug, dryrun, _: args = [] } = yargs
   .usage('$0 [--options ...] [package.json ...]')
   .help('h').alias('h', 'help').alias('v', 'version')
   .option('strict', {
@@ -41,8 +41,12 @@ const { bump, strict, debug, dryrun, _: files = [] } = yargs
   .strict()
   .argv
 
-/* Default is package.json in the current directory */
+/* Normalize arguments and default to package.json in the current directory */
+const files = args.map((arg) => arg.toString())
 if (! files.length) files.push('package.json')
 
 /* Process packages, one by one */
-upgradePackages(files, { strict, debug, dryrun, bump }).catch(console.error)
+upgradePackages(files, { strict, debug, dryrun, bump }).catch((error) => {
+  console.error(error)
+  process.exit(1)
+})
