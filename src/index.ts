@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
+import { readNpmRc } from './npmrc'
 import { promises as fs } from 'fs'
 import glob from 'glob'
 import semver, { ReleaseType } from 'semver'
-import packageJson from 'package-json'
+import fetch from 'npm-registry-fetch'
 
 export type UpdaterOptions = {
   bump?: ReleaseType,
@@ -43,7 +44,7 @@ export default async function processPackages(
    * (we're upgrading, ainnit?) without any prerelease                        *
    * ------------------------------------------------------------------------ */
 
-  function getVersions(name: string): Promise<string[]> {
+  function getVersions(name: string, npmrc: Record<string, any>): Promise<string[]> {
     if (cache[name]) {
       $debug(`Returning cached versions for ${Y}${name}${K}`)
       return cache[name]
@@ -54,14 +55,14 @@ export default async function processPackages(
     const range = new semver.Range('>=0.0.0', { includePrerelease: false })
     const filter = (version: string) => range.test(version)
 
-    return cache[name] = packageJson(name, { allVersions: true })
-      .then(({ versions }) => Object.keys(versions).filter(filter).sort(semver.rcompare))
+    return cache[name] = fetch.json(name, Object.assign({}, npmrc, { spec: name }))
+      .then((data) => Object.keys(data.versions as Record<string, unknown>).filter(filter).sort(semver.rcompare))
   }
 
   /* ------------------------------------------------------------------------ *
    * Update the version for a single dependency                               *
    * ------------------------------------------------------------------------ */
-  async function updateDependency(name: string, rangeString: string) {
+  async function updateDependency(name: string, rangeString: string, npmrc: Record<string, any>) {
     const match = /^\s*([~^])\s*(\d+(\.\d+(\.\d+)?)?)\s*$/.exec(rangeString)
     if (! match) {
       $debug(`Not processing range ${G}${rangeString}${K} for ${Y}${name}${K}`)
@@ -78,7 +79,7 @@ export default async function processPackages(
     }
 
     const range = new semver.Range(rangeString)
-    const versions = await getVersions(name)
+    const versions = await getVersions(name, npmrc)
 
     for (const v of versions) {
       if (range.test(v)) return `${specifier}${v}`
@@ -117,6 +118,8 @@ export default async function processPackages(
     }
     if (debug) process.stdout.write('\n')
 
+    const npmrc = await readNpmRc(file)
+
     const changes = []
     for (const type in data) {
       if (! type.match(/[dD]ependencies$/)) continue
@@ -128,7 +131,7 @@ export default async function processPackages(
       for (const name of Object.keys(data[type] || {}).sort()) {
         if (! debug) process.stdout.write('.')
         const from = data[type][name]
-        const to = await updateDependency(name, from)
+        const to = await updateDependency(name, from, npmrc)
         if (from !== to) changes.push({ name, from, to, kind })
         dependencies[name] = to
       }
