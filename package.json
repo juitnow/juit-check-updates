@@ -1,6 +1,6 @@
 {
   "name": "@juitnow/cmd-check-updates",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Small and fast utility to update package dependencies",
   "author": "Team Juit <developers@juit.com>",
   "license": "UNLICENSED",
@@ -24,7 +24,7 @@
   "dependencies": {
     "glob": "^7.1.7",
     "ini": "^2.0.0",
-    "npm-registry-fetch": "^10.1.2",
+    "npm-registry-fetch": "^11.0.0",
     "semver": "^7.3.5",
     "yargs": "^17.0.1"
   },
