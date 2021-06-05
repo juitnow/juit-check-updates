@@ -22,7 +22,8 @@ jobs:
 
       - name: Update the package
         run: |
-          npx '@juitnow/cmd-check-updates' --bump patch package.json packages/*/package.json
+          npm run updates
+          git update-index --refresh > /dev/null || npm run bump
         env:
           NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_TOKEN }}
 
