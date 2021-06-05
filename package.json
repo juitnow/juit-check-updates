@@ -1,6 +1,6 @@
 {
   "name": "@juitnow/cmd-check-updates",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Small and fast utility to update package dependencies",
   "author": "Team Juit <developers@juit.com>",
   "license": "UNLICENSED",
@@ -43,7 +43,7 @@
     "@typescript-eslint/parser": "^4.26.0",
     "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
-    "eslint": "^7.27.0",
+    "eslint": "^7.28.0",
     "eslint-config-google": "^0.14.0",
     "eslint-plugin-import": "^2.23.4",
     "eslint-plugin-tsdoc": "^0.2.14",
