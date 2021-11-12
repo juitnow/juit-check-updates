@@ -14,7 +14,7 @@ export type UpdaterOptions = {
 }
 
 /* Our packages cache version */
-const cache: { [name: string]: Promise<string[]> } = { }
+const cache: Record<string, Promise<string[]>> = {}
 
 /* Destructuring from "fs.promises" */
 const { readFile, writeFile } = fs
@@ -45,7 +45,7 @@ export default async function processPackages(
    * ------------------------------------------------------------------------ */
 
   function getVersions(name: string, npmrc: Record<string, any>): Promise<string[]> {
-    if (cache[name]) {
+    if (name in cache) {
       $debug(`Returning cached versions for ${Y}${name}${K}`)
       return cache[name]
     }
@@ -53,10 +53,15 @@ export default async function processPackages(
     $debug(`Retrieving versions for package ${Y}${name}${K}`)
 
     const range = new semver.Range('>=0.0.0', { includePrerelease: false })
-    const filter = (version: string) => range.test(version)
 
     return cache[name] = fetch.json(name, Object.assign({}, npmrc, { spec: name }))
-      .then((data) => Object.keys(data.versions as Record<string, unknown>).filter(filter).sort(semver.rcompare))
+      .then((data: any) => {
+        return Object.entries(data.versions as Record<string, Record<string, any>>)
+          .filter(([ , info ]) => ! info.deprecated) // no deprecated
+          .map(([ version ]) => version) // extract key (version)
+          .filter((version) => range.test(version)) // range match
+          .sort(semver.rcompare)
+      })
   }
 
   /* ------------------------------------------------------------------------ *
