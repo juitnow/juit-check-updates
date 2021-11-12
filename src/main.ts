@@ -38,7 +38,7 @@ const parsed = yargs
     'Multiple files (or globs) can be specified on the command line.\n',
     'When no files are specified, the default is to process the "package.json" file in the current directory',
   ].join('\n'))
-  .strict()
+  .strictOptions()
   .argv
 
 Promise.resolve(parsed).then(({ bump, strict, debug, dryrun, _: args = [] }) => {
