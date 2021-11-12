@@ -20,7 +20,7 @@ async function readFile(filename: string): Promise<Record<string, any>> {
     }
 
     return npmrc
-  } catch (error) {
+  } catch (error: any) {
     if (error.code === 'ENOENT') return {}
     throw error
   }
