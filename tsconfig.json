@@ -1,31 +1,21 @@
 {
   "compilerOptions": {
-    "lib": [
-      "es2019"
-    ],
-    "removeComments": false,
-    "types": [
-      "node",
-      "mocha"
-    ],
-    "typeRoots": [
-      "node_modules/@types"
-    ],
+    "lib": [ "es2022" ],
+    "target": "es2022",
+    "module": "es2022",
+    "moduleResolution": "node16",
+    "types": [ "node" ],
     "esModuleInterop": true,
-    "noImplicitAny": true,
-    "module": "commonjs",
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "sourceMap": true,
+
+    "noEmit": true,
+
     "strict": true,
-    "target": "es2019",
-    "declaration": true,
-    "allowJs": false
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
   },
   "include": [
-    "src"
+    "./src",
+    "./build.ts",
   ],
-  "exclude": [
-    "node_modules",
-  ]
 }
