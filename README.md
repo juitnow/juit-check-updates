@@ -20,10 +20,12 @@ Options:
   -h, --help     Show help                                             [boolean]
   -s, --strict   Strictly adhere to semver rules for tilde (~x.y.z)
                  and caret (^x.y.z) dependency ranges                  [boolean]
+  -q, --quick    Consider dev/peer/optional dependency updates if and
+                 only if the main depenencies also had updates         [boolean]
   -d, --debug    Output debugging informations                         [boolean]
   -b, --bump     Bump the version of the package file on changes
                                             [choices: "major", "minor", "patch"]
-      --dryrun   Only process changes without writing to disk          [boolean]
+  -x, --dry-run  Only process changes without writing to disk          [boolean]
   -v, --version  Show version number                                   [boolean]
 
 Multiple files (or globs) can be specified on the command line.
@@ -32,3 +34,9 @@ When no files are specified, the default is to process the "package.json" file
 in the current directory
 $
 ```
+
+Legal
+-----
+
+* [Copyright Notice](NOTICE.md)
+* [License](LICENSE.md)
