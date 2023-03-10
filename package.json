@@ -1,9 +1,9 @@
 {
-  "name": "@juitnow/cmd-check-updates",
-  "version": "1.3.0",
+  "name": "@juit/check-updates",
+  "version": "2.0.0",
   "description": "Small and fast utility to update package dependencies",
   "author": "Team Juit <developers@juit.com>",
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
   "bin": {
     "check-updates": "./check-updates.js"
   },
@@ -40,7 +40,7 @@
   "homepage": "https://github.com/juitnow/cmd-check-updates#readme",
   "files": [
     "*.md",
-    "dist/",
+    "check-updates.js",
     "src/"
   ]
 }
