@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 import { readNpmRc } from './npmrc'
 import { promises as fs } from 'fs'
 import glob from 'glob'
@@ -9,8 +7,16 @@ import fetch from 'npm-registry-fetch'
 export type UpdaterOptions = {
   bump?: ReleaseType,
   strict?: boolean,
+  quick?: boolean,
   debug?: boolean,
   dryrun?: boolean,
+}
+
+interface Change {
+  name: string,
+  from: string,
+  to: string,
+  kind: string,
 }
 
 /* Our packages cache version */
@@ -28,9 +34,9 @@ const [ K, R, G, Y, B ] = [ 0, 31, 32, 33, 34 ].map((x) => `\u001b[${x}m`)
 export default async function processPackages(
   patterns: string | string[],
   options: UpdaterOptions,
-): Promise<boolean> {
+): Promise<number> {
   /* Destructure our options */
-  const { bump, strict, debug, dryrun } = options
+  const { bump, quick, strict, debug, dryrun } = options
 
   /* ------------------------------------------------------------------------ *
    * A super-simple debug function                                            *
@@ -112,7 +118,7 @@ export default async function processPackages(
   /* ------------------------------------------------------------------------ *
    * Process all dependencies in a package file                               *
    * ------------------------------------------------------------------------ */
-  async function processPackage(file: string) {
+  async function processPackage(file: string): Promise<number> {
     process.stdout.write(`Processing ${G}${file}${K} `)
 
     const data = JSON.parse(await readFile(file, 'utf8'))
@@ -125,21 +131,28 @@ export default async function processPackages(
 
     const npmrc = await readNpmRc(file)
 
-    const changes = []
+    const changes: Change[] = []
+    let mainDependencyChanges = 0
+
     for (const type in data) {
       if (! type.match(/[dD]ependencies$/)) continue
       if (type.match(/bundled?Dependencies/)) continue
 
       const kind = type.length > 12 ? ` [${type.slice(0, -12)}]` : ''
 
-      const dependencies: { [name: string]: string } = {}
-      for (const name of Object.keys(data[type] || {}).sort()) {
-        if (! debug) process.stdout.write('.')
-        const from = data[type][name]
+      const dependencies: Record<string, string> = {}
+      const promises = Object.keys(data[type] || {}).sort().map(async (name) => {
+        const from: string = data[type][name]
         const to = await updateDependency(name, from, npmrc)
-        if (from !== to) changes.push({ name, from, to, kind })
+        if (! debug) process.stdout.write('.')
+        if (from !== to) {
+          changes.push({ name, from, to, kind })
+          if (type === 'dependencies') mainDependencyChanges ++
+        }
         dependencies[name] = to
-      }
+      })
+
+      await Promise.all(promises)
 
       if (Object.keys(dependencies).length) {
         data[type] = dependencies
@@ -152,10 +165,11 @@ export default async function processPackages(
 
     if (! changes.length) {
       console.log(` ${R}no changes${K}`)
-      return false
+      return 0
     }
 
     /* Really pretty print */
+    changes.sort(({ name: a }, { name: b }) => a < b ? -1 : a > b ? 1 : 0)
     console.log(` ${R}${changes.length} changes${K}`)
     let lname = 0, lfrom = 0, lto = 0
     for (const { name, from, to } of changes) {
@@ -168,6 +182,12 @@ export default async function processPackages(
       console.log(` * ${Y}${name.padEnd(lname)}${K}  :  ${G}${from.padStart(lfrom)}${K} -> ${G}${to.padEnd(lto)} ${B}${kind}${K}`)
     }
 
+    /* Ignore all changes if no main changes, and in "quick" mode */
+    if (quick && (mainDependencyChanges === 0)) {
+      console.log(`No changes to main dependencies, ${Y}ignoring ${changes.length} other changes${K}`)
+      return 0
+    }
+
     /* Bump the package if we need to */
     if (bump) {
       const bumped = semver.inc(data.version, bump)
@@ -178,22 +198,26 @@ export default async function processPackages(
     /* Write out the new package file */
     if (dryrun) {
       console.log(`Dry run, not writing ${G}${file}${K}`)
+      return 0
     } else {
       writeFile(file, JSON.stringify(data, null, 2) + '\n')
+      return changes.length
     }
-    return true
   }
 
   /* ------------------------------------------------------------------------ *
    * Process a number of package files one by one                             *
    * ------------------------------------------------------------------------ */
   const files = await find(...patterns)
+  let changes = 0
 
   let newline = false
   for (const file of files) {
     if (newline) console.log()
-    newline = await processPackage(file)
+    const packageChanges = await processPackage(file)
+    newline = !! packageChanges
+    changes += packageChanges
   }
 
-  return false
+  return changes
 }
