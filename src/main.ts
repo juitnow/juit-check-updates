@@ -35,6 +35,11 @@ const parsed = yargs
       type: 'boolean',
       description: 'Output debugging informations',
     })
+    .option('n', {
+      alias: 'no-errors',
+      type: 'boolean',
+      description: 'Exit with 0 (zero) in case of no updates',
+    })
     .options('b', {
       alias: 'bump',
       coerce: ((bump): ReleaseType => bump == true ? 'patch' : bump),
@@ -53,7 +58,7 @@ const parsed = yargs
     .strictOptions()
     .argv
 
-Promise.resolve(parsed).then(({ b: bump, s: strict, q: quick, d: debug, x: dryrun, _: args = [] }) => {
+Promise.resolve(parsed).then(({ b: bump, s: strict, q: quick, n: noerr, d: debug, x: dryrun, _: args = [] }) => {
   /* Normalize arguments and default to package.json in the current directory */
   const files = args.map((arg) => arg.toString())
   if (! files.length) files.push('package.json')
@@ -61,7 +66,7 @@ Promise.resolve(parsed).then(({ b: bump, s: strict, q: quick, d: debug, x: dryru
   /* Process packages, one by one */
   processPackages(files, { strict, quick, debug, dryrun, bump })
       .then((changes) => {
-        process.exit(changes ? 0 : 1)
+        process.exit(changes ? 0 : noerr ? 0 : -1)
       })
       .catch((error) => {
         console.error(error)
