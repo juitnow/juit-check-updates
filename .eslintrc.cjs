@@ -5,4 +5,7 @@ module.exports = {
   extends: [
     'plugin:@plugjs/typescript',
   ],
+  rules: {
+    'no-console': 'off',
+  },
 }
