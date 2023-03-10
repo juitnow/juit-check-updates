@@ -1,9 +1,10 @@
-import { promises as fs } from 'fs'
-import { parse } from 'ini'
-import path from 'path'
+import fs from 'node:fs/promises'
+import path from 'node:path'
 
-function replaceEnvironmentVariable(token: string) {
-  return token.replace(/^\$\{?([^}]*)\}?$/, (match, ...vars: any[]) => {
+import { parse } from 'ini'
+
+function replaceEnvironmentVariable(token: string): string {
+  return token.replace(/^\$\{?([^}]*)\}?$/, (_match, ...vars: any[]) => {
     return process.env[vars[0]] || ''
   })
 }

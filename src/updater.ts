@@ -1,8 +1,12 @@
-import { readNpmRc } from './npmrc'
-import { promises as fs } from 'fs'
+import fs from 'node:fs/promises'
+
 import glob from 'glob'
-import semver, { ReleaseType } from 'semver'
+import semver from 'semver'
 import fetch from 'npm-registry-fetch'
+
+import { readNpmRc } from './npmrc'
+
+import type { ReleaseType } from 'semver'
 
 export type UpdaterOptions = {
   bump?: ReleaseType,
@@ -31,9 +35,9 @@ const [ K, R, G, Y, B ] = [ 0, 31, 32, 33, 34 ].map((x) => `\u001b[${x}m`)
 /* ========================================================================== *
  * Process a number of package files one by one                               *
  * ========================================================================== */
-export default async function processPackages(
-  patterns: string | string[],
-  options: UpdaterOptions,
+export async function processPackages(
+    patterns: string | string[],
+    options: UpdaterOptions,
 ): Promise<number> {
   /* Destructure our options */
   const { bump, quick, strict, debug, dryrun } = options
@@ -61,19 +65,19 @@ export default async function processPackages(
     const range = new semver.Range('>=0.0.0', { includePrerelease: false })
 
     return cache[name] = fetch.json(name, Object.assign({}, npmrc, { spec: name }))
-      .then((data: any) => {
-        return Object.entries(data.versions as Record<string, Record<string, any>>)
-          .filter(([ , info ]) => ! info.deprecated) // no deprecated
-          .map(([ version ]) => version) // extract key (version)
-          .filter((version) => range.test(version)) // range match
-          .sort(semver.rcompare)
-      })
+        .then((data: any) => {
+          return Object.entries(data.versions as Record<string, Record<string, any>>)
+              .filter(([ , info ]) => ! info.deprecated) // no deprecated
+              .map(([ version ]) => version) // extract key (version)
+              .filter((version) => range.test(version)) // range match
+              .sort(semver.rcompare)
+        })
   }
 
   /* ------------------------------------------------------------------------ *
    * Update the version for a single dependency                               *
    * ------------------------------------------------------------------------ */
-  async function updateDependency(name: string, rangeString: string, npmrc: Record<string, any>) {
+  async function updateDependency(name: string, rangeString: string, npmrc: Record<string, any>): Promise<string> {
     const match = /^\s*([~^])\s*(\d+(\.\d+(\.\d+)?)?)\s*$/.exec(rangeString)
     if (! match) {
       $debug(`Not processing range ${G}${rangeString}${K} for ${Y}${name}${K}`)
@@ -96,23 +100,6 @@ export default async function processPackages(
       if (range.test(v)) return `${specifier}${v}`
     }
     return `${specifier}${version}`
-  }
-
-  /* ------------------------------------------------------------------------ *
-   * Process a list of glob patterns and return all matching files            *
-   * ------------------------------------------------------------------------ */
-  async function find(...patterns: string[]) {
-    const files: string[] = []
-    for (const pattern of patterns) {
-      await new Promise((resolve, reject) => {
-        glob(pattern, (error, matches) => {
-          if (error) return reject(error)
-          files.push(...matches)
-          resolve(matches)
-        })
-      })
-    }
-    return files.filter((file, index, files) => files.indexOf(file) === index)
   }
 
   /* ------------------------------------------------------------------------ *
@@ -171,7 +158,7 @@ export default async function processPackages(
     /* Really pretty print */
     changes.sort(({ name: a }, { name: b }) => a < b ? -1 : a > b ? 1 : 0)
     console.log(` ${R}${changes.length} changes${K}`)
-    let lname = 0, lfrom = 0, lto = 0
+    let lname = 0; let lfrom = 0; let lto = 0
     for (const { name, from, to } of changes) {
       lname = lname > name.length ? lname : name.length
       lfrom = lfrom > from.length ? lfrom : from.length
@@ -200,7 +187,7 @@ export default async function processPackages(
       console.log(`Dry run, not writing ${G}${file}${K}`)
       return 0
     } else {
-      writeFile(file, JSON.stringify(data, null, 2) + '\n')
+      await writeFile(file, JSON.stringify(data, null, 2) + '\n')
       return changes.length
     }
   }
@@ -208,7 +195,7 @@ export default async function processPackages(
   /* ------------------------------------------------------------------------ *
    * Process a number of package files one by one                             *
    * ------------------------------------------------------------------------ */
-  const files = await find(...patterns)
+  const files = await glob(patterns)
   let changes = 0
 
   let newline = false
