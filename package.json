@@ -32,17 +32,20 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/juitnow/cmd-check-updates.git"
+    "url": "git+ssh://git@github.com/juitnow/juit-check-updates.git"
   },
   "bugs": {
-    "url": "https://github.com/juitnow/cmd-check-updates/issues"
+    "url": "https://github.com/juitnow/juit-check-updates/issues"
   },
-  "homepage": "https://github.com/juitnow/cmd-check-updates#readme",
+  "homepage": "https://github.com/juitnow/juit-check-updates#readme",
   "files": [
     "*.md",
     "check-updates.js",
     "src/"
   ],
+  "directories": {
+    "test": "test"
+  },
   "keywords": [
     "check",
     "dependencies",
