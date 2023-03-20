@@ -57,7 +57,7 @@ export async function processPackages(
   function getVersions(name: string, npmrc: Record<string, any>): Promise<string[]> {
     if (name in cache) {
       $debug(`Returning cached versions for ${Y}${name}${K}`)
-      return cache[name]
+      return cache[name] as Promise<string[]>
     }
 
     $debug(`Retrieving versions for package ${Y}${name}${K}`)
@@ -84,7 +84,7 @@ export async function processPackages(
       return rangeString
     }
 
-    const [ , specifier, version ] = match
+    const [ , specifier = '', version = '' ] = match
 
     if (! strict) {
       const r = rangeString
@@ -142,7 +142,12 @@ export async function processPackages(
       await Promise.all(promises)
 
       if (Object.keys(dependencies).length) {
-        data[type] = dependencies
+        data[type] = Object.entries(dependencies)
+            .sort(([ a ], [ b ]) => a.localeCompare(b))
+            .reduce((deps, [ name, version ]) => {
+              deps[name] = version
+              return deps
+            }, {} as Record<string, string>)
       } else {
         delete data[type]
       }
