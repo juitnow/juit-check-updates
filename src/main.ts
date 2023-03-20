@@ -11,7 +11,7 @@ type ReleaseType = 'major' | 'minor' | 'patch'
  * ========================================================================== */
 
 /* Parse command line arguments */
-const parsed = yargs
+const parsed = await yargs.default(process.argv.slice(2))
     .usage('$0 [--options ...] [package.json ...]')
     .help('h').alias('h', 'help').alias('v', 'version')
     .option('s', {
@@ -58,18 +58,18 @@ const parsed = yargs
     .strictOptions()
     .argv
 
-Promise.resolve(parsed).then(({ b: bump, s: strict, q: quick, n: noerr, d: debug, x: dryrun, _: args = [] }) => {
-  /* Normalize arguments and default to package.json in the current directory */
-  const files = args.map((arg) => arg.toString())
-  if (! files.length) files.push('package.json')
+/* Expand parsed arguments */
+const { b: bump, s: strict, q: quick, n: noerr, d: debug, x: dryrun, _: args = [] } = parsed
 
-  /* Process packages, one by one */
-  processPackages(files, { strict, quick, debug, dryrun, bump })
-      .then((changes) => {
-        process.exit(changes ? 0 : noerr ? 0 : -1)
-      })
-      .catch((error) => {
-        console.error(error)
-        process.exit(1)
-      })
-}).catch((error) => console.log(error))
+/* Normalize arguments and default to package.json in the current directory */
+const files = args.map((arg) => arg.toString())
+if (! files.length) files.push('package.json')
+
+/* Process packages, one by one */
+try {
+  const changes = await processPackages(files, { strict, quick, debug, dryrun, bump })
+  process.exit(changes ? 0 : noerr ? 0 : -1)
+} catch (error) {
+  console.error(error)
+  process.exit(1)
+}
