@@ -2,45 +2,10 @@ name: Release Package
 
 on:
   push:
-    branches: [trunk]
+    branches: [main]
 
 jobs:
   release:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Use Node.js 16.x
-        uses: actions/setup-node@v2
-        with:
-          node-version: 16.x
-          registry-url: 'https://npm.pkg.github.com'
-
-      - name: Build the package
-        id: build
-        run: |
-          npm clean-install
-          npm run build
-          node -e 'console.log("::set-output name=version::" + require("./package.json").version)'
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_TOKEN }}
-
-      # REMEMBER: releases, tags, pushes created with the GITHUB_TOKEN below
-      # will ****NEVER**** trigger another workflow run, so things like
-      # deployments, checks, builds, or *anything* really needs to be tied
-      # to a push to trunk (same as this workflow)
-
-      - name: Create Release
-        uses: actions/create-release@v1
-        with:
-          tag_name: v${{ steps.build.outputs.version }}
-          release_name: Release ${{ steps.build.outputs.version }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Publish package
-        run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    name: Release Package
+    uses: juitnow/workflows/.github/workflows/release.yml@main
+    secrets: inherit
