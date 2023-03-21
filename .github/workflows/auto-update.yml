@@ -24,9 +24,9 @@ jobs:
 
       - name: Check and apply dependencies updates
         run: |
-          # Install ourselves and quickly build our "check-updates" script
+          # Install ourselves and build our "check-updates" script
           npm clean-install
-          npm run build bundle
+          npm run build
 
           # Check for updates, and exit script on error / no updates found
           node ./check-updates.js --quick --bump || exit $(( $? == 255 ? 0 : $? ))
