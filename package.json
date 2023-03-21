@@ -1,6 +1,6 @@
 {
   "name": "@juit/check-updates",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "type": "module",
   "description": "Small and fast utility to update package dependencies",
   "author": "Team Juit <developers@juit.com>",
@@ -17,7 +17,7 @@
     "transpile": "plug transpile"
   },
   "dependencies": {
-    "glob": "^9.3.0",
+    "glob": "^9.3.1",
     "ini": "^3.0.1",
     "npm-registry-fetch": "^14.0.3",
     "semver": "^7.3.8",
@@ -29,7 +29,7 @@
     "@types/ini": "^1.3.31",
     "@types/npm-registry-fetch": "^8.0.4",
     "@types/semver": "^7.3.13",
-    "@types/yargs": "^17.0.22"
+    "@types/yargs": "^17.0.23"
   },
   "repository": {
     "type": "git",
