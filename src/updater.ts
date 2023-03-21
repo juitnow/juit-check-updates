@@ -1,4 +1,4 @@
-import fs from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 
 import glob from 'glob'
 import semver from 'semver'
@@ -25,9 +25,6 @@ interface Change {
 
 /* Our packages cache version */
 const cache: Record<string, Promise<string[]>> = {}
-
-/* Destructuring from "fs.promises" */
-const { readFile, writeFile } = fs
 
 /* Colors */
 const [ K, R, G, Y, B ] = [ 0, 31, 32, 33, 34 ].map((x) => `\u001b[${x}m`)
