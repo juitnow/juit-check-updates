@@ -7,5 +7,6 @@ on:
 jobs:
   release:
     name: Release Package
-    uses: juitnow/workflows/.github/workflows/release.yml@main
-    secrets: inherit
+    uses: juitnow/workflows-public/.github/workflows/release.yml@main
+    secrets:
+      npm_token: ${{ secrets.npm_token }}
