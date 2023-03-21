@@ -9,5 +9,4 @@ jobs:
     name: Release Package
     uses: juitnow/workflows-public/.github/workflows/release.yml@main
     secrets:
-      git_token: ${{ github.token }}
       npm_token: ${{ secrets.npm_token }}
