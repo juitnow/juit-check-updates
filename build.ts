@@ -2,7 +2,7 @@ import { build, find, tasks, bundleLocals, banner } from '@plugjs/build'
 
 export default build({
   ...tasks({
-    'cjsTranspile': false,
+    'cjs': false,
   }),
 
   async bundle(): Promise<void> {
