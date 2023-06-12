@@ -1,6 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises'
 
-import glob from 'glob'
+import * as glob from 'glob'
 import semver from 'semver'
 import fetch from 'npm-registry-fetch'
 
@@ -197,7 +197,7 @@ export async function processPackages(
   /* ------------------------------------------------------------------------ *
    * Process a number of package files one by one                             *
    * ------------------------------------------------------------------------ */
-  const files = await glob(patterns)
+  const files = await glob.glob(patterns)
   let changes = 0
 
   let newline = false
