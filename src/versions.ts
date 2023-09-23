@@ -13,11 +13,6 @@ export class VersionsCache {
     this._cache = {}
   }
 
-  /** Set (and force) the package to have only the specified version */
-  setVersion(name: string, version: string): void {
-    this._cache[name] = Promise.resolve([ version ])
-  }
-
   /** Return the available versions for a package, sorted */
   getVersions(
       name: string,
