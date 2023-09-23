@@ -14,31 +14,52 @@ When installed, the `check-updates` script can be invoked directly:
 
 ```
 $ check-updates --help
-check-updates [--options ...] [package.json ...]
+
+Usage:
+
+  check-updates [--options ...] [package.json ...]
 
 Options:
-  -h, --help       Show help                                           [boolean]
-  -s, --strict     Strictly adhere to semver rules for tilde (~x.y.z)
-                   and caret (^x.y.z) dependency ranges                [boolean]
-  -q, --quick      Consider dev/peer/optional dependency updates if and
-                   only if the main depenencies also had updates       [boolean]
-  -d, --debug      Output debugging informations                       [boolean]
-  -n, --no-errors  Exit with 0 (zero) in case of no updates            [boolean]
-  -b, --bump       Bump the version of the package file on changes
-                                            [choices: "major", "minor", "patch"]
-  -x, --dry-run    Only process changes without writing to disk        [boolean]
-  -v, --version    Show version number                                 [boolean]
 
-Multiple files (or globs) can be specified on the command line.
+  -h, --help           Show this help
 
-When no files are specified, the default is to process the "package.json" file
-in the current directory
+  -s, --strict         Strictly  adhere to semver  rules for  tilde (~x.y.z) and
+                       caret (^x.y.z) dependency ranges         [default: false]
+
+  -q, --quick          Consider dev/peer/optional dependency updates if and only
+                       if the main depenencies also had updates [default: false]
+
+  -d, --debug          Output debugging informations            [default: false]
+
+  -n, --errors         Exit with 255 (-1) in case of no updates  [default: true]
+
+  -w, --workspaces     Process package workspaces                [default: true]
+
+  -a, --align          Align workspaces versions by setting all packages version
+                       to the greatest found after updates      [default: false]
+
+  -b, --bump           Bump the version of the  package file when changes in the
+                       dependencies are found [one of "major", "minor", "patch"]
+
+  -x, --dry-run        Do not write package changes             [default: false]
+
+Remarks:
+
+  Options can be negated using the "no" prefix. For example, to avoid processing
+  workspaces,  either "--workspaces=false" or "--no-workspaces" define  the same
+  behaviour.
+
+  Multiple files (or globs) can be specified on the command line.  When no files
+  are specified the default is to process the "package.json" file in the current
+  directory
+
 $
 ```
 
 Alternatively it can be invoked via `npx '@juit/check-updates'`.
 
-The exit code returned to the caller will be:
+By default (unless `--no-errors` is specified) the exit code returned to the
+caller will be:
 
 * `0`: dependencies were updated and `package.json` was changed.
 * `255`: nothing was updated, no changes.

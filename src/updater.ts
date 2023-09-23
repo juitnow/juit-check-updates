@@ -1,212 +1,358 @@
+import assert from 'node:assert'
+import { EventEmitter } from 'node:events'
 import { readFile, writeFile } from 'node:fs/promises'
+import { relative, resolve } from 'node:path'
 
-import * as glob from 'glob'
 import semver from 'semver'
-import fetch from 'npm-registry-fetch'
 
+
+import { B, G, R, X, Y, makeDebug } from './debug'
 import { readNpmRc } from './npmrc'
 
 import type { ReleaseType } from 'semver'
+import type { VersionsCache } from './versions'
 
 export type UpdaterOptions = {
-  bump?: ReleaseType,
-  strict?: boolean,
-  quick?: boolean,
-  debug?: boolean,
-  dryrun?: boolean,
+  bump: ReleaseType | undefined,
+  debug: boolean,
+  quick: boolean,
+  strict: boolean,
+  workspaces: boolean,
 }
 
-interface Change {
+const dependencyTypes = [
+  'dependencies',
+  'devDependencies',
+  'peerDependencies',
+  'optionalDependencies',
+] as const
+
+type DependencyType = (typeof dependencyTypes)[number]
+
+interface PackageData {
+  name?: string,
+  version?: string,
+  dependencies?: Record<string, string>,
+  devDependencies?: Record<string, string>,
+  peerDependencies?: Record<string, string>,
+  optionalDependencies?: Record<string, string>,
+}
+
+interface DependencyChange {
   name: string,
-  from: string,
-  to: string,
-  kind: string,
+  declared: string,
+  updated: string,
+  type: DependencyType,
 }
 
-/* Our packages cache version */
-const cache: Record<string, Promise<string[]>> = {}
+class Workspaces {
+  private _versions: Record<string, string> = {}
+  private _emitter = new EventEmitter()
 
-/* Colors */
-const [ K, R, G, Y, B ] = [ 0, 31, 32, 33, 34 ].map((x) => `\u001b[${x}m`)
-
-/* ========================================================================== *
- * Process a number of package files one by one                               *
- * ========================================================================== */
-export async function processPackages(
-    patterns: string | string[],
-    options: UpdaterOptions,
-): Promise<number> {
-  /* Destructure our options */
-  const { bump, quick, strict, debug, dryrun } = options
-
-  /* ------------------------------------------------------------------------ *
-   * A super-simple debug function                                            *
-   * ------------------------------------------------------------------------ */
-  function $debug(...args: string[]): void {
-    if (debug && args) console.log(`${R}[DEBUG]${K}`, ...args)
+  onUpdate(handler: (name: string, version: string) => void): void {
+    this._emitter.on('update', handler)
   }
 
-  /* ------------------------------------------------------------------------ *
-   * Download (or return cached) versions for a package, greatest first       *
-   * (we're upgrading, ainnit?) without any prerelease                        *
-   * ------------------------------------------------------------------------ */
+  register(name: string, version?: string): void {
+    assert(! this._versions[name], `Package "${name}" already registered`)
+    this._versions[name] = version || '0.0.0'
+  }
 
-  function getVersions(name: string, npmrc: Record<string, any>): Promise<string[]> {
-    if (name in cache) {
-      $debug(`Returning cached versions for ${Y}${name}${K}`)
-      return cache[name] as Promise<string[]>
+  update(name: string, version: string): void {
+    assert(this._versions[name], `Package "${name}" not registered`)
+    const oldVersion = this._versions[name] || '0.0.0'
+    assert(semver.gte(version, oldVersion), `Package "${name}" new version ${version} less than old ${oldVersion}`)
+    if (semver.eq(version, oldVersion)) return
+    this._versions[name] = version
+    this._emitter.emit('update', name, version)
+  }
+
+  has(name: string): boolean {
+    return !! this._versions[name]
+  }
+
+  * [Symbol.iterator](): Generator<[ name: string, version: string ]> {
+    for (const [ name, version ] of Object.entries(this._versions)) {
+      yield [ name, version ]
+    }
+  }
+}
+
+
+export class Updater {
+  private _packageData?: PackageData
+  private _npmRc?: Record<string, any>
+  private _originalVersion?: string
+
+  private _debug: (...args: any[]) => void
+  private _children: Updater[]
+  private _changed = false
+
+  constructor(
+      private readonly _packageFile: string,
+      private readonly _options: UpdaterOptions,
+      private readonly _cache: VersionsCache,
+      private readonly _workspaces: Workspaces = new Workspaces(),
+  ) {
+    this._packageFile = resolve(_packageFile)
+    this._debug = makeDebug(_options.debug)
+    this._children = []
+
+    _workspaces.onUpdate((name, version) => {
+      if (! this._packageData) return
+
+      for (const type of dependencyTypes) {
+        const dependencies = this._packageData[type]
+        if (! dependencies) return
+        if (! dependencies[name]) return
+        if (dependencies[name] === version) return
+
+        dependencies[name] = version
+        this._changed = true
+        this._bump()
+      }
+    })
+  }
+
+  get name(): string | undefined {
+    assert(this._packageData, 'Updater not initialized')
+    return this._packageData.name
+  }
+
+  get version(): string {
+    assert(this._packageData, 'Updater not initialized')
+    return this._packageData.version || '0.0.0'
+  }
+
+  set version(version: string) {
+    assert(this._originalVersion && this._packageData, 'Updater not initialized')
+
+    assert(semver.lte(this._originalVersion, version), [
+      `Unable to set version for "${this.packageFile}" to "${version}"`,
+      `as it's less than original version "${this._originalVersion}"`,
+    ].join(' '))
+
+    if (semver.eq(this._originalVersion, version)) return
+    if (this._packageData.version === version) return
+
+    this._changed = true
+    console.log(`Updating ${this._details} version to ${Y}${version}${X}`)
+    this._packageData.version = version
+    if (this.name) this._workspaces.update(this.name, version)
+  }
+
+  get packageFile(): string {
+    return relative(process.cwd(), this._packageFile)
+  }
+
+  get changed(): boolean {
+    if (this._changed) return true
+    return this._children.reduce((changed, child) => changed || child.changed, false)
+  }
+
+  async init(): Promise<this> {
+    this._debug('Reading package file', this.packageFile)
+
+    /* Parse our package file */
+    const json = await readFile(this._packageFile, 'utf8')
+    const data = this._packageData = JSON.parse(json)
+    assert(data && (typeof data === 'object') && (! Array.isArray(data)),
+        `File ${this.packageFile} is not a valid "pacakge.json" file`)
+
+    /* Parse the ".npmrc" relative to the package file */
+    const npmrc = await readNpmRc(this._packageFile)
+
+    /* Register this package in our workspaces and set the original version */
+    if (data.name) this._workspaces.register(data.name, data.version)
+    this._originalVersion = data.version || '0.0.0'
+
+    /* Read up our workspaces */
+    if (this._options.workspaces && data.workspaces) {
+      for (const path of data.workspaces) {
+        const packageFile = resolve(this._packageFile, '..', path, 'package.json')
+        const updater = new Updater(packageFile, this._options, this._cache, this._workspaces)
+        this._children.push(await updater.init())
+      }
     }
 
-    $debug(`Retrieving versions for package ${Y}${name}${K}`)
-
-    const range = new semver.Range('>=0.0.0', { includePrerelease: false })
-
-    return cache[name] = fetch.json(name, Object.assign({}, npmrc, { spec: name }))
-        .then((data: any) => {
-          return Object.entries(data.versions as Record<string, Record<string, any>>)
-              .filter(([ , info ]) => ! info.deprecated) // no deprecated
-              .map(([ version ]) => version) // extract key (version)
-              .filter((version) => range.test(version)) // range match
-              .sort(semver.rcompare)
-        })
+    /* Done */
+    this._packageData = data
+    this._npmRc = npmrc
+    return this
   }
 
-  /* ------------------------------------------------------------------------ *
-   * Update the version for a single dependency                               *
-   * ------------------------------------------------------------------------ */
-  async function updateDependency(name: string, rangeString: string, npmrc: Record<string, any>): Promise<string> {
-    const match = /^\s*([~^])\s*(\d+(\.\d+(\.\d+)?)?)\s*$/.exec(rangeString)
-    if (! match) {
-      $debug(`Not processing range ${G}${rangeString}${K} for ${Y}${name}${K}`)
+  private get _details(): string {
+    let string = `${G}${this.packageFile}${X}`
+    if (this.name || this.version) {
+      string += ` [${Y}`
+      if (this.name) string += `${this.name}`
+      if (this.name && this.version) string += ' '
+      if (this.version) string += `${this.version}`
+      string += `${X}]`
+    }
+    return string
+  }
+
+  private _bump(): void {
+    assert(this._originalVersion, 'Updater not initialized')
+
+    if (this._options.bump) {
+      this.version = semver.inc(this._originalVersion, this._options.bump) || this._originalVersion
+    }
+  }
+
+  /** Update a single dependency, returning the highest matching version */
+  private async _updateDependency(name: string, rangeString: string): Promise<string> {
+    assert(this._npmRc, 'Updater not initialized')
+
+    /* Check if this is a workspace package */
+    if (this._workspaces.has(name)) {
+      this._debug(`Not processing workspace package ${Y}${name}${X}`)
       return rangeString
     }
 
+    /* Check that we have a proper range (^x... or ~x...) */
+    const match = /^\s*([~^])\s*(\d+(\.\d+(\.\d+)?)?)\s*$/.exec(rangeString)
+    if (! match) {
+      this._debug(`Not processing range ${G}${rangeString}${X} for ${Y}${name}${X}`)
+      return rangeString
+    }
+
+    /* Extract specifier and version from the string range*/
     const [ , specifier = '', version = '' ] = match
 
-    if (! strict) {
+    /* Extend range if not in strict mode */
+    if (! this._options.strict) {
       const r = rangeString
       rangeString = `>=${version}`
       if (specifier === '~') rangeString += ` <${semver.inc(version, 'major')}`
-      $debug(`Extending version for ${Y}${name}${K} from ${G}${r}${K} to ${G}${rangeString}${K}`)
+      this._debug(`Extending version for ${Y}${name}${X} from ${G}${r}${X} to ${G}${rangeString}${X}`)
     }
 
+    /* Get the highest matching version and return it */
     const range = new semver.Range(rangeString)
-    const versions = await getVersions(name, npmrc)
-
+    const versions = await this._cache.getVersions(name, this._npmRc)
     for (const v of versions) {
       if (range.test(v)) return `${specifier}${v}`
     }
+
+    /* No version found, return the original one cleaned up */
     return `${specifier}${version}`
   }
 
-  /* ------------------------------------------------------------------------ *
-   * Process all dependencies in a package file                               *
-   * ------------------------------------------------------------------------ */
-  async function processPackage(file: string): Promise<number> {
-    process.stdout.write(`Processing ${G}${file}${K} `)
+  /** Update a dependencies group, populating the "updated" version field */
+  private async _updateDependenciesGroup(type: DependencyType): Promise<DependencyChange []> {
+    assert(this._packageData, 'Updater not initialized')
+    const dependencies = this._packageData[type]
+    if (! dependencies) return []
 
-    const data = JSON.parse(await readFile(file, 'utf8'))
-    if (data.name) {
-      process.stdout.write(`[${Y}${data.name}`)
-      if (data.version) process.stdout.write(` ${data.version}`)
-      process.stdout.write(`${K}] `)
+    /* Parallelize updates for this group */
+    const promises = Object.entries(dependencies)
+        .map(async ([ name, declared ]) => {
+          const updated = await this._updateDependency(name, declared)
+          if (! this._options.debug) process.stdout.write('.')
+          if (updated === declared) return
+
+          dependencies[name] = updated
+          return { name, declared, updated, type } satisfies DependencyChange
+        })
+
+    /* Await all updates and return changes */
+    return (await Promise.all(promises))
+        .filter((change): change is DependencyChange => !! change)
+  }
+
+  /** Update dependencies and return the version number of this package */
+  async update(): Promise<void> {
+    assert(this._packageData, 'Updater not initialized')
+
+    /* Start by processing all workspaces first */
+    for (const child of this._children) await child.update()
+
+    /* Some pretty printing of our package name and version */
+    process.stdout.write(`Processing ${this._details} `)
+    if (this._options.debug) process.stdout.write('\n')
+
+    /* Process the _main_ dependencies group first */
+    const changes = await this._updateDependenciesGroup('dependencies')
+
+    /* Process all the other dependencies if we need to do so */
+    if (changes.length || (! this._options.quick)) {
+      changes.push(...await this._updateDependenciesGroup('devDependencies'))
+      changes.push(...await this._updateDependenciesGroup('optionalDependencies'))
+      changes.push(...await this._updateDependenciesGroup('peerDependencies'))
     }
-    if (debug) process.stdout.write('\n')
 
-    const npmrc = await readNpmRc(file)
+    /* Simply return if no changes were detected or mark this as changed */
+    if (this._options.debug) process.stdout.write('Updated with')
+    if (! changes.length) return void console.log(` ${R}no changes${X}`)
+    this._changed = true
 
-    const changes: Change[] = []
-    let mainDependencyChanges = 0
+    /* Really pretty print all our changed dependencies */
+    changes.sort(({ name: a }, { name: b }) => a < b ? -1 : a > b ? 1 : 0)
+    console.log(` ${R}${changes.length} changes${X}`)
+    let lname = 0
+    let ldeclared = 0
+    let lupdated = 0
+    for (const { name, declared, updated } of changes) {
+      lname = lname > name.length ? lname : name.length
+      ldeclared = ldeclared > declared.length ? ldeclared : declared.length
+      lupdated = lupdated > updated.length ? lupdated : updated.length
+    }
 
-    for (const type in data) {
-      if (! type.match(/[dD]ependencies$/)) continue
-      if (type.match(/bundled?Dependencies/)) continue
+    for (const { name, declared, updated, type } of changes) {
+      const kind =
+          type === 'devDependencies' ? 'dev' :
+          type === 'peerDependencies' ? 'peer' :
+          type === 'optionalDependencies' ? 'optional' :
+          'main'
+      console.log([
+        ` * ${Y}${name.padEnd(lname)}${X}`,
+        `  :  ${G}${declared.padStart(ldeclared)}${X}`,
+        ` -> ${G}${updated.padEnd(lupdated)} ${B}${kind}${X}`,
+      ].join(''))
+    }
 
-      const kind = type.length > 12 ? ` [${type.slice(0, -12)}]` : ''
+    /* Bump the package if we need to */
+    this._bump()
+  }
 
-      const dependencies: Record<string, string> = {}
-      const promises = Object.keys(data[type] || {}).sort().map(async (name) => {
-        const from: string = data[type][name]
-        const to = await updateDependency(name, from, npmrc)
-        if (! debug) process.stdout.write('.')
-        if (from !== to) {
-          changes.push({ name, from, to, kind })
-          if (type === 'dependencies') mainDependencyChanges ++
-        }
-        dependencies[name] = to
-      })
+  align(version?: string): void {
+    if (! version) {
+      let aligned = '0.0.0'
+      for (const [ , version ] of this._workspaces) {
+        if (semver.gt(version, aligned)) aligned = version
+      }
+      version = aligned
+    }
 
-      await Promise.all(promises)
+    this.version = version
+    for (const child of this._children) child.version = version
+    console.log(`Workspaces versions aligned to ${Y}${version}${X}`)
+  }
 
-      if (Object.keys(dependencies).length) {
-        data[type] = Object.entries(dependencies)
-            .sort(([ a ], [ b ]) => a.localeCompare(b))
+  /** Write out the new package file */
+  async write(): Promise<void> {
+    assert(this._packageData, 'Updater not initialized')
+
+    /* Sort all our dependencies */
+    for (const type of dependencyTypes) {
+      const dependencies = Object.entries(this._packageData[type] || {})
+      if (dependencies.length) {
+        this._packageData[type] = dependencies
+            .sort(([ nameA ], [ nameB ]) => nameA.localeCompare(nameB))
             .reduce((deps, [ name, version ]) => {
               deps[name] = version
               return deps
             }, {} as Record<string, string>)
       } else {
-        delete data[type]
+        delete this._packageData[type]
       }
     }
+    const json = JSON.stringify(this._packageData, null, 2)
+    this._debug(`${Y}>>>`, this.packageFile, `<<<${X}\n${json}`)
+    await writeFile(this.packageFile, json + '\n')
 
-    if (debug) process.stdout.write('Updated with')
-
-    if (! changes.length) {
-      console.log(` ${R}no changes${K}`)
-      return 0
-    }
-
-    /* Really pretty print */
-    changes.sort(({ name: a }, { name: b }) => a < b ? -1 : a > b ? 1 : 0)
-    console.log(` ${R}${changes.length} changes${K}`)
-    let lname = 0; let lfrom = 0; let lto = 0
-    for (const { name, from, to } of changes) {
-      lname = lname > name.length ? lname : name.length
-      lfrom = lfrom > from.length ? lfrom : from.length
-      lto = lto > to.length ? lto : to.length
-    }
-
-    for (const { name, from, to, kind } of changes) {
-      console.log(` * ${Y}${name.padEnd(lname)}${K}  :  ${G}${from.padStart(lfrom)}${K} -> ${G}${to.padEnd(lto)} ${B}${kind}${K}`)
-    }
-
-    /* Ignore all changes if no main changes, and in "quick" mode */
-    if (quick && (mainDependencyChanges === 0)) {
-      console.log(`No changes to main dependencies, ${Y}ignoring ${changes.length} other changes${K}`)
-      return 0
-    }
-
-    /* Bump the package if we need to */
-    if (bump) {
-      const bumped = semver.inc(data.version, bump)
-      console.log(` - Bumping version ${Y}${data.version}${K} -> ${G}${bumped}${K}`)
-      data.version = bumped
-    }
-
-    /* Write out the new package file */
-    if (dryrun) {
-      console.log(`Dry run, not writing ${G}${file}${K}`)
-      return 0
-    } else {
-      await writeFile(file, JSON.stringify(data, null, 2) + '\n')
-      return changes.length
-    }
+    for (const child of this._children) await child.write()
   }
-
-  /* ------------------------------------------------------------------------ *
-   * Process a number of package files one by one                             *
-   * ------------------------------------------------------------------------ */
-  const files = await glob.glob(patterns)
-  let changes = 0
-
-  let newline = false
-  for (const file of files) {
-    if (newline) console.log()
-    const packageChanges = await processPackage(file)
-    newline = !! packageChanges
-    changes += packageChanges
-  }
-
-  return changes
 }

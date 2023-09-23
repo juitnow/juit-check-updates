@@ -1,75 +1,157 @@
 #!/usr/bin/env node
 
-import * as yargs from 'yargs'
+import { glob } from 'glob'
+import yargsParser from 'yargs-parser'
 
-import { processPackages } from './updater'
+import { B, G, K, R, X, Y, makeDebug } from './debug'
+import { Updater } from './updater'
+import { VersionsCache } from './versions'
 
-type ReleaseType = 'major' | 'minor' | 'patch'
+import type { UpdaterOptions } from './updater'
+
+type ReleaseType = undefined | 'major' | 'minor' | 'patch'
+function releaseType(releaseType: unknown): ReleaseType {
+  if (releaseType === undefined) return
+  if (releaseType === '') return 'patch'
+  if (releaseType === 'major') return 'major'
+  if (releaseType === 'minor') return 'minor'
+  if (releaseType === 'patch') return 'patch'
+  console.log(`Invalid flag for --bump: "${releaseType}"`)
+  process.exit(1)
+}
 
 /* ========================================================================== *
  * CALL UP MAIN() AND DEAL WITH THE ASYNC PROMISE IT RETURNS                  *
  * ========================================================================== */
 
-/* Parse command line arguments */
-const parsed = await yargs.default(process.argv.slice(2))
-    .usage('$0 [--options ...] [package.json ...]')
-    .help('h').alias('h', 'help').alias('v', 'version')
-    .option('s', {
-      alias: 'strict',
-      type: 'boolean',
-      description: [
-        'Strictly adhere to semver rules for tilde (~x.y.z)',
-        'and caret (^x.y.z) dependency ranges',
-      ].join('\n'),
-    })
-    .option('q', {
-      alias: 'quick',
-      type: 'boolean',
-      description: [
-        'Consider dev/peer/optional dependency updates if and',
-        'only if the main depenencies also had updates',
-      ].join('\n'),
-    })
-    .option('d', {
-      alias: 'debug',
-      type: 'boolean',
-      description: 'Output debugging informations',
-    })
-    .option('n', {
-      alias: 'no-errors',
-      type: 'boolean',
-      description: 'Exit with 0 (zero) in case of no updates',
-    })
-    .options('b', {
-      alias: 'bump',
-      coerce: ((bump): ReleaseType => bump == true ? 'patch' : bump),
-      choices: [ 'major', 'minor', 'patch' ] as ReleaseType[],
-      description: 'Bump the version of the package file on changes',
-    })
-    .options('x', {
-      alias: 'dry-run',
-      type: 'boolean',
-      description: 'Only process changes without writing to disk',
-    })
-    .epilogue([
-      'Multiple files (or globs) can be specified on the command line.\n',
-      'When no files are specified, the default is to process the "package.json" file in the current directory',
-    ].join('\n'))
-    .strictOptions()
-    .argv
+function showHelp(): never {
+  console.log(`
+${Y}Usage${X}:
 
-/* Expand parsed arguments */
-const { b: bump, s: strict, q: quick, n: noerr, d: debug, x: dryrun, _: args = [] } = parsed
+  ${G}check-updates${X} [--options ...] [package.json ...]
+
+${Y}Options${X}:
+
+  ${G}-h${X}, ${G}--help${X}           Show this help
+
+  ${G}-s${X}, ${G}--strict${X}         Strictly  adhere to semver  rules for  tilde (~x.y.z) and
+                       caret (^x.y.z) dependency ranges         ${K}[default: ${B}false${K}]${X}
+
+  ${G}-q${X}, ${G}--quick${X}          Consider dev/peer/optional dependency updates if and only
+                       if the main depenencies also had updates ${K}[default: ${B}false${K}]${X}
+
+  ${G}-d${X}, ${G}--debug${X}          Output debugging informations            ${K}[default: ${B}false${K}]${X}
+
+  ${G}-n${X}, ${G}--errors${X}         Exit with 255 (-1) in case of no updates  ${K}[default: ${B}true${K}]${X}
+
+  ${G}-w${X}, ${G}--workspaces${X}     Process package workspaces                ${K}[default: ${B}true${K}]${X}
+
+  ${G}-a${X}, ${G}--align${X}          Align workspaces versions by setting all packages version
+                       to the greatest found after updates      ${K}[default: ${B}false${K}]${X}
+
+  ${G}-b${X}, ${G}--bump${X}           Bump the version of the  package file when changes in the
+                       dependencies are found ${K}[one of "${B}major${K}", "${B}minor${K}", "${B}patch${K}"]${X}
+
+  ${G}-x${X}, ${G}--dry-run${X}        Do not write package changes             ${K}[default: ${B}false${K}]${X}
+
+${Y}Remarks${X}:
+
+  Options can be negated using the ${K}"${G}no${K}"${X} prefix. For example, to avoid processing
+  workspaces,  either ${K}"${G}--workspaces=false${K}"${X} or ${K}"${G}--no-workspaces${K}"${X} define  the same
+  behaviour.
+
+  Multiple files (or globs) can be specified on the command line.  When no files
+  are specified the default is to process the "package.json" file in the current
+  directory
+`)
+  process.exit(1)
+}
+
+/* Parse command line arguments */
+const { _: args, ...opts } = yargsParser(process.argv.slice(2), {
+  configuration: {
+    'camel-case-expansion': false,
+    'strip-aliased': true,
+    'strip-dashed': true,
+  },
+  alias: {
+    'align': [ 'a' ],
+    'bump': [ 'b' ],
+    'debug': [ 'd' ],
+    'dry-run': [ 'x' ],
+    'help': [ 'h' ],
+    'errors': [ 'n' ],
+    'quick': [ 'q' ],
+    'strict': [ 's' ],
+    'workspaces': [ 'w' ],
+  },
+  string: [ 'bump' ],
+  boolean: [
+    'align',
+    'debug',
+    'dry-run',
+    'help',
+    'errors',
+    'quick',
+    'strict',
+    'workspaces',
+  ],
+})
+
+/* Preliminiary stuff before checking options */
+makeDebug(opts.debug)('Options:', { args, ...opts })
+if (opts.help) showHelp()
+
+/* Defaults */
+let align = false
+let dryRun = false
+let errors = true
+const options: UpdaterOptions = {
+  bump: undefined,
+  debug: false,
+  quick: false,
+  strict: false,
+  workspaces: true,
+}
+
+/* Process each option, one by one */
+for (const [ key, value ] of Object.entries(opts)) {
+  switch (key) {
+    case 'align': align = !! value; break
+    case 'bump': options.bump = releaseType(value); break
+    case 'debug': options.debug = !! value; break
+    case 'dry-run': dryRun = !! value; break
+    case 'errors': errors = !! value; break
+    case 'quick': options.quick = !! value; break
+    case 'strict': options.strict = !! value; break
+    case 'workspaces': options.workspaces = !! value; break
+    default:
+      console.log(`${R}[ERROR]${X} Unsupported / unknown option: --${key}\n`)
+      showHelp()
+  }
+}
 
 /* Normalize arguments and default to package.json in the current directory */
-const files = args.map((arg) => arg.toString())
-if (! files.length) files.push('package.json')
+const patterns = args.map((arg) => arg.toString())
+if (! patterns.length) patterns.push('package.json')
 
 /* Process packages, one by one */
 try {
-  const changes = await processPackages(files, { strict, quick, debug, dryrun, bump })
-  process.exit(changes ? 0 : noerr ? 0 : -1)
+  const files = await glob.glob(patterns)
+  const cache = new VersionsCache()
+
+  let changed = false
+  for (const file of files) {
+    const updater = await new Updater(file, options, cache).init()
+    await updater.update()
+    if (align) await updater.align()
+    if (! dryRun) await updater.write()
+    console.log('===>', updater.packageFile, updater.changed)
+    changed ||= updater.changed
+  }
+
+  process.exitCode = changed ? 0 : errors ? -1 : 0
 } catch (error) {
   console.error(error)
-  process.exit(1)
+  process.exitCode = 1
 }

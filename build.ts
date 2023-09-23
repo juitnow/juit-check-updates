@@ -1,6 +1,6 @@
-import { build, find, tasks, bundleLocals, banner } from '@plugjs/build'
+import { banner, bundleLocals, find, plugjs, tasks } from '@plugjs/build'
 
-export default build({
+export default plugjs({
   ...tasks({
     'cjs': false,
   }),
