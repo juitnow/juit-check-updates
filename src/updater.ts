@@ -322,7 +322,7 @@ export class Updater {
   }
 
   align(version?: string): void {
-    if (! this._workspaces.length) {
+    if (this._workspaces.length < 2) {
       return this._debug(`No workspaces found in ${this._details}`)
     }
 
