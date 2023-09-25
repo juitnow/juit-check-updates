@@ -2,7 +2,7 @@ Dependencies Update Checker
 ===========================
 
 This package contains a simple script to update the dependencies of a given
-package file.
+package file (or files).
 
 By default it will _extend_ the semantics of `semver` checking for _minor_
 version updates for tilde ranges (`~x.y.z`) and checking for _major_ version
@@ -52,9 +52,9 @@ Remarks:
   workspaces,  either "--workspaces=false" or "--no-workspaces" define  the same
   behaviour.
 
-  Multiple files (or globs) can be specified on the command line.  When no files
-  are specified the default is to process the "package.json" file in the current
-  directory
+  Multiple package.json files can be  specified on the command line.  In case no
+  files are specified,  the default is to process  the package.json  file in the
+  current directory.
 
 $
 ```
