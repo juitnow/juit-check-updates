@@ -49,6 +49,10 @@ class Workspaces {
   private _versions: Record<string, string> = {}
   private _emitter = new EventEmitter()
 
+  get length(): number {
+    return Object.entries(this._versions).length
+  }
+
   onUpdate(handler: (name: string, version: string) => void): void {
     this._emitter.on('update', handler)
   }
@@ -318,6 +322,10 @@ export class Updater {
   }
 
   align(version?: string): void {
+    if (! this._workspaces.length) {
+      return this._debug(`No workspaces found in ${this._details}`)
+    }
+
     if (! version) {
       let aligned = '0.0.0'
       for (const [ , version ] of this._workspaces) {

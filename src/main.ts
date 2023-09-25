@@ -47,7 +47,7 @@ ${Y}Options${X}:
   ${G}-w${X}, ${G}--workspaces${X}     Process package workspaces                ${K}[default: ${B}true${K}]${X}
 
   ${G}-a${X}, ${G}--align${X}          Align workspaces versions by setting all packages version
-                       to the greatest found after updates      ${K}[default: ${B}false${K}]${X}
+                       to the greatest found after updates       ${K}[default: ${B}true${K}]${X}
 
   ${G}-b${X}, ${G}--bump${X}           Bump the version of the  package file when changes in the
                        dependencies are found ${K}[one of "${B}major${K}", "${B}minor${K}", "${B}patch${K}"]${X}
@@ -103,7 +103,7 @@ makeDebug(opts.debug)('Options:', { args, ...opts })
 if (opts.help) showHelp()
 
 /* Defaults */
-let align = false
+let align = true
 let dryRun = false
 let errors = true
 const options: UpdaterOptions = {
@@ -146,7 +146,6 @@ try {
     await updater.update()
     if (align) await updater.align()
     if (! dryRun) await updater.write()
-    console.log('===>', updater.packageFile, updater.changed)
     changed ||= updater.changed
   }
 
