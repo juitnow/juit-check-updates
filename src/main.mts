@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
 import yargsParser from 'yargs-parser'
 
 import { B, G, K, R, X, Y, makeDebug } from './debug'
@@ -23,15 +27,24 @@ function releaseType(releaseType: unknown): ReleaseType {
  * CALL UP MAIN() AND DEAL WITH THE ASYNC PROMISE IT RETURNS                  *
  * ========================================================================== */
 
+function showVersion(): never {
+  const path = fileURLToPath(import.meta.url)
+  const file = resolve(path, '..', '..', 'package.json')
+  const data = readFileSync(file, 'utf-8')
+  const json = JSON.parse(data)
+  console.log(`v${json.version}`)
+  process.exit(1)
+}
+
 function showHelp(): never {
   console.log(`
 ${Y}Usage${X}:
-
   ${G}check-updates${X} [--options ...] [package.json ...]
 
 ${Y}Options${X}:
-
   ${G}-h${X}, ${G}--help${X}           Show this help.
+
+  ${G}-v${X}, ${G}--version${X}        Show the version and exit.
 
   ${G}-b${X}, ${G}--bump${X}           Bump the version of the  package file when changes in the
                        dependencies are found. Specifiy either "${B}major${X}",  "${B}minor${X}"
@@ -57,11 +70,6 @@ ${Y}Options${X}:
                        after bumping.
 
 ${Y}Remarks${X}:
-
-  Options can be negated using the ${K}"${G}no${K}"${X} prefix. For example, to avoid processing
-  workspaces,  either ${K}"${G}--workspaces=false${K}"${X} or ${K}"${G}--no-workspaces${K}"${X} define  the same
-  behaviour.
-
   Multiple ${B}package.json${X} files can be  specified on the command line.  In case no
   files are specified,  the default is to process  the ${B}package.json${X}  file in the
   current directory.
@@ -77,15 +85,13 @@ const { _: args, ...opts } = yargsParser(process.argv.slice(2), {
     'strip-dashed': true,
   },
   alias: {
-    'align': [ 'a' ],
     'bump': [ 'b' ],
     'debug': [ 'd' ],
     'dry-run': [ 'x' ],
     'help': [ 'h' ],
-    'errors': [ 'n' ],
     'quick': [ 'q' ],
     'strict': [ 's' ],
-    'workspaces': [ 'w' ],
+    'version': [ 'v' ],
   },
   string: [ 'bump' ],
   boolean: [
@@ -96,12 +102,14 @@ const { _: args, ...opts } = yargsParser(process.argv.slice(2), {
     'errors',
     'quick',
     'strict',
+    'version',
     'workspaces',
   ],
 })
 
 /* Preliminiary stuff before checking options */
 makeDebug(opts.debug)('Options:', { args, ...opts })
+if (opts.version) showVersion()
 if (opts.help) showHelp()
 
 /* Defaults */

@@ -16,12 +16,12 @@ When installed, the `check-updates` script can be invoked directly:
 $ check-updates --help
 
 Usage:
-
   check-updates [--options ...] [package.json ...]
 
 Options:
-
   -h, --help           Show this help.
+
+  -v, --version        Show the version and exit.
 
   -b, --bump           Bump the version of the  package file when changes in the
                        dependencies are found. Specifiy either "major",  "minor"
@@ -47,11 +47,6 @@ Options:
                        after bumping.
 
 Remarks:
-
-  Options can be negated using the "no" prefix. For example, to avoid processing
-  workspaces,  either "--workspaces=false" or "--no-workspaces" define  the same
-  behaviour.
-
   Multiple package.json files can be  specified on the command line.  In case no
   files are specified,  the default is to process  the package.json  file in the
   current directory.
