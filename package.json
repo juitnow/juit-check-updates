@@ -54,7 +54,7 @@
   "homepage": "https://github.com/juitnow/juit-check-updates#readme",
   "files": [
     "*.md",
-    "check-updates.js",
+    "dist/",
     "src/"
   ],
   "directories": {
