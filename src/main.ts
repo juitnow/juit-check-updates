@@ -32,27 +32,30 @@ ${Y}Usage${X}:
 
 ${Y}Options${X}:
 
-  ${G}-h${X}, ${G}--help${X}           Show this help
-
-  ${G}-s${X}, ${G}--strict${X}         Strictly  adhere to semver  rules for  tilde (~x.y.z) and
-                       caret (^x.y.z) dependency ranges         ${K}[default: ${B}false${K}]${X}
-
-  ${G}-q${X}, ${G}--quick${X}          Consider dev/peer/optional dependency updates if and only
-                       if the main depenencies also had updates ${K}[default: ${B}false${K}]${X}
-
-  ${G}-d${X}, ${G}--debug${X}          Output debugging informations            ${K}[default: ${B}false${K}]${X}
-
-  ${G}-n${X}, ${G}--errors${X}         Exit with 255 (-1) in case of no updates  ${K}[default: ${B}true${K}]${X}
-
-  ${G}-w${X}, ${G}--workspaces${X}     Process package workspaces                ${K}[default: ${B}true${K}]${X}
-
-  ${G}-a${X}, ${G}--align${X}          Align workspaces versions by setting all packages version
-                       to the greatest found after updates       ${K}[default: ${B}true${K}]${X}
+  ${G}-h${X}, ${G}--help${X}           Show this help.
 
   ${G}-b${X}, ${G}--bump${X}           Bump the version of the  package file when changes in the
-                       dependencies are found ${K}[one of "${B}major${K}", "${B}minor${K}", "${B}patch${K}"]${X}
+                       dependencies are found. Specifiy either "${B}major${X}",  "${B}minor${X}"
+                       or "${B}patch${X}" ${K}(default)${X} to indicate which version to bump.
 
-  ${G}-x${X}, ${G}--dry-run${X}        Do not write package changes             ${K}[default: ${B}false${K}]${X}
+  ${G}-s${X}, ${G}--strict${X}         Strictly  adhere to semver  rules for  tilde ${K}(~x.y.z)${X} and
+                       caret ${K}(^x.y.z)${X} dependency ranges.
+
+  ${G}-q${X}, ${G}--quick${X}          Consider dev/peer/optional dependency updates if and only
+                       if the main depenencies also had updates.
+
+  ${G}-d${X}, ${G}--debug${X}          Output debugging informations.
+
+  ${G}-x${X}, ${G}--dry-run${X}        Do not write package changes.
+
+      ${G}--no-errors${X}      Exit with ${B}0${X} in case  of no updates.  Normally the updater
+                       will exit with ${B}255${X} in this case.
+
+      ${G}--no-workspaces${X}  Do not process workspaces.
+
+      ${G}--no-align${X}       Do not align workspaces versions. By default all versions
+                       will  be set to  the highest  one amongst  all workspaces
+                       after bumping.
 
 ${Y}Remarks${X}:
 
