@@ -107,9 +107,9 @@ export class Updater {
 
       for (const type of dependencyTypes) {
         const dependencies = this._packageData[type]
-        if (! dependencies) return
-        if (! dependencies[name]) return
-        if (dependencies[name] === version) return
+        if (! dependencies) continue
+        if (! dependencies[name]) continue
+        if (dependencies[name] === version) continue
 
         dependencies[name] = version
         this._changed = true
