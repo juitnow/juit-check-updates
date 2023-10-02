@@ -47,7 +47,7 @@ interface DependencyChange {
 
 class Workspaces {
   private _versions: Record<string, string> = {}
-  private _emitter = new EventEmitter()
+  private _emitter = new EventEmitter().setMaxListeners(100)
 
   get length(): number {
     return Object.entries(this._versions).length
