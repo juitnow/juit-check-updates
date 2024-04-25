@@ -43,7 +43,7 @@ describe('Dependencies Updater', () => {
       const target = plug.resolve(tempdir, 'package.json')
       await plug.fs.copyFile(source, target)
 
-      await plug.exec('tsrun', scriptFile, '--dry-run', { cwd: tempdir })
+      await plug.exec('tsrun', scriptFile, '--dry-run', '--debug', { cwd: tempdir })
 
       const original = plug.parseJson(source)
       const modified = plug.parseJson(target)
