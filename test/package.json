@@ -1,0 +1,7 @@
+{
+  "name": "test-package",
+  "version": "1.2.3",
+  "dependencies": {
+    "typescript": "^4.0.0"
+  }
+}
