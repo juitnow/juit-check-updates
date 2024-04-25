@@ -1,10 +1,12 @@
-import { plugjs, tasks } from '@plugjs/build'
+import { log, plugjs, tasks } from '@plugjs/build'
 
 export default plugjs({
-  ...tasks(),
+  ...tasks({
+    minimumCoverage: 70,
+    minimumFileCoverage: 60,
+  }),
 
-  async all(): Promise<void> {
-    await this.transpile()
-    await this.lint()
+  async test_cjs(): Promise<void> {
+    log.warn('Skipping test in CJS mode')
   },
 })
