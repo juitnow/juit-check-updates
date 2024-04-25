@@ -27,6 +27,7 @@ function releaseType(releaseType: unknown): ReleaseType {
  * CALL UP MAIN() AND DEAL WITH THE ASYNC PROMISE IT RETURNS                  *
  * ========================================================================== */
 
+// coverage ignore next
 function showVersion(): never {
   const path = fileURLToPath(import.meta.url)
   const file = resolve(path, '..', '..', 'package.json')
@@ -36,6 +37,7 @@ function showVersion(): never {
   process.exit(1)
 }
 
+// coverage ignore next
 function showHelp(): never {
   console.log(`
 ${Y}Usage${X}:

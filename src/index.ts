@@ -1,3 +1,4 @@
+// coverage ignore file
 export type { UpdaterOptions } from './updater'
 
 export { readNpmRc } from './npmrc'
