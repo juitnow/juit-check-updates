@@ -1,6 +1,6 @@
 {
   "name": "@juit/check-updates",
-  "version": "3.0.5",
+  "version": "3.0.6",
   "type": "module",
   "description": "Small and fast utility to update package dependencies",
   "author": "Team Juit <developers@juit.com>",
@@ -38,7 +38,7 @@
     "yargs-parser": "^21.1.1"
   },
   "devDependencies": {
-    "@plugjs/build": "eslintv9",
+    "@plugjs/build": "^0.6.0",
     "@types/ini": "^4.1.1",
     "@types/npm-registry-fetch": "^8.0.7",
     "@types/semver": "^7.5.8",
