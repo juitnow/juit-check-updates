@@ -1,0 +1,7 @@
+{
+  "name": "test-package",
+  "version": "1.2.3",
+  "dependencies": {
+    "test-dep": "^1.0.0"
+  }
+}
