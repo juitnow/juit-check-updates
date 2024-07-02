@@ -17,15 +17,18 @@ export class VersionsCache {
   getVersions(
       name: string,
       npmrc: Record<string, any>,
+      includePrerelease: boolean,
   ): Promise<string[]> {
-    if (this._cache[name]) {
+    const key = includePrerelease ? name + '+prerelease' : name
+
+    if (this._cache[key]) {
       this._debug(`Returning cached versions for ${Y}${name}${X}`)
-      return this._cache[name]!
+      return this._cache[key]!
     }
 
     this._debug(`Retrieving versions for package ${Y}${name}${X}`)
 
-    const range = new semver.Range('>=0.0.0', { includePrerelease: false })
+    const range = new semver.Range('>=0.0.0', { includePrerelease })
 
     /* we cache the promise, so that multiple concurrent requests for the same
      * package will generate only one http fetch request */
@@ -37,7 +40,7 @@ export class VersionsCache {
               .filter((version) => range.test(version)) // range match
               .sort(semver.rcompare)
         })
-    this._cache[name] = promise
+    this._cache[key] = promise
     return promise
   }
 }

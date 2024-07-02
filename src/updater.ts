@@ -223,25 +223,37 @@ export class Updater {
     }
 
     /* Extract specifier and version from the string range*/
-    const [ , specifier = '', version = '' ] = match
+    const [ , specifier = '', version = '', , , label = '' ] = match
 
     /* Extend range if not in strict mode */
     if (! this._options.strict) {
       const r = rangeString
-      rangeString = `>=${version}`
+      rangeString = `>=${version}${label}`
       if (specifier === '~') rangeString += ` <${semver.inc(version, 'major')}`
       this._debug(`Extending version for ${Y}${name}${X} from ${G}${r}${X} to ${G}${rangeString}${X}`)
     }
-
-    /* Get the highest matching version and return it */
     const range = new semver.Range(rangeString)
-    const versions = await this._cache.getVersions(name, this._npmRc)
+
+    /* Get the highest matching RELEASE version and return it. If the dependency
+     * has a label, and a RELEASE version fullfills it, then we basically drop
+     * any pre-release info and upgrade to RELEASE */
+    const versions = await this._cache.getVersions(name, this._npmRc, false)
     for (const v of versions) {
       if (range.test(v)) return `${specifier}${v}`
     }
 
+    /* If we're still here and the dependency is marked with a label, also try
+     * pre-releases: this ensures we upgrade pre-releases up to the point of a
+     * new release version (which is catched above) */
+    if (label) {
+      const versions = await this._cache.getVersions(name, this._npmRc, true)
+      for (const v of versions) {
+        if (range.test(v)) return `${specifier}${v}`
+      }
+    }
+
     /* No version found, return the original one cleaned up */
-    return `${specifier}${version}`
+    return `${specifier}${version}${label}`
   }
 
   /** Update a dependencies group, populating the "updated" version field */
