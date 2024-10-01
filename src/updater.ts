@@ -216,7 +216,7 @@ export class Updater {
     }
 
     /* Check that we have a proper range (^x... or ~x...) */
-    const match = /^\s*([~^])\s*(\d+(\.\d+(\.\d+)?)?)(-(alpha|beta|rc)[.-]\d+)?\s*/.exec(rangeString)
+    const match = /^\s*([~^])\s*(\d+(\.\d+(\.\d+)?)?)(-(alpha|beta|rc)[.-]\d+)?\s*$/.exec(rangeString)
     if (! match) {
       this._debug(`Not processing range ${G}${rangeString}${X} for ${Y}${name}${X}`)
       return rangeString
