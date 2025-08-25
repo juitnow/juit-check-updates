@@ -30,12 +30,12 @@ async function readIniFile(filename: string): Promise<Record<string, any>> {
 export async function readNpmRc(packageJsonFile: string): Promise<Record<string, any>> {
   const local = readIniFile(path.resolve(packageJsonFile, '..', '.npmrc'))
   const user = readIniFile(
-    process.env.NPM_CONFIG_USERCONFIG ?
-      process.env.NPM_CONFIG_USERCONFIG :
-      process.env.HOME ? path.resolve(process.env.HOME, '.npmrc') : '' )
+      process.env.NPM_CONFIG_USERCONFIG ?
+        process.env.NPM_CONFIG_USERCONFIG :
+        process.env.HOME ? path.resolve(process.env.HOME, '.npmrc') : '' )
   const global = readIniFile(
-    process.env.NPM_CONFIG_GLOBALCONFIG ?
-      process.env.NPM_CONFIG_GLOBALCONFIG :
-      '/etc/npmrc')
+      process.env.NPM_CONFIG_GLOBALCONFIG ?
+        process.env.NPM_CONFIG_GLOBALCONFIG :
+        '/etc/npmrc')
   return Object.assign({}, ...await Promise.all([ global, user, local ]))
 }
