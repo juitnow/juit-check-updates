@@ -27,7 +27,7 @@ jobs:
       - name: Check and apply dependencies updates
         run: |
           # Install ourselves and build our "check-updates" script
-          npm clean-install
+          npm clean-install --ignore-scripts
           npm run build
 
           # Check for updates, and exit script on error / no updates found
@@ -35,7 +35,7 @@ jobs:
 
           # If still here, just run a full package update and install dependencies
           rm -rf node-modules package-lock.json
-          npm install
+          npm install --ignore-scripts
 
           # Re-build our package
           npm run build
