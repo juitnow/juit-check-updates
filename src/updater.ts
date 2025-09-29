@@ -318,10 +318,10 @@ export class Updater {
 
     for (const { name, declared, updated, type } of changes) {
       const kind =
-          type === 'devDependencies' ? 'dev' :
-          type === 'peerDependencies' ? 'peer' :
-          type === 'optionalDependencies' ? 'optional' :
-          'main'
+        type === 'devDependencies' ? 'dev' :
+        type === 'peerDependencies' ? 'peer' :
+        type === 'optionalDependencies' ? 'optional' :
+        'main'
       console.log([
         ` * ${Y}${name.padEnd(lname)}${X}`,
         `  :  ${G}${declared.padStart(ldeclared)}${X}`,
