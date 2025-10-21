@@ -111,9 +111,16 @@ export class Updater {
         if (! dependencies[name]) continue
         if (dependencies[name] === version) continue
 
-        dependencies[name] = version
-        this._changed = true
-        this._bump()
+        // Only set version for dependencies that are in semver-range format
+        try {
+          new semver.Range(dependencies[name])
+          dependencies[name] = version
+          this._changed = true
+          this._bump()
+        } catch {
+          this._debug(`Not updating dependency ${Y}${name}${X} with non-semver range ${G}${dependencies[name]}${X}`)
+          continue
+        }
       }
     })
   }
