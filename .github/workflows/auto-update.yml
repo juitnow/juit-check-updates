@@ -1,5 +1,8 @@
 name: Automatic Updates
 
+permissions:
+  contents: write
+
 on:
   schedule:
     - cron: "15 0 * * 5"
@@ -15,8 +18,6 @@ jobs:
 
       - name: Checkout Repository
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.git_token }}
 
       - name: Setup NodeJS
         uses: actions/setup-node@v4
