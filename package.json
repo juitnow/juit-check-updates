@@ -1,6 +1,6 @@
 {
   "name": "@juit/check-updates",
-  "version": "3.0.16",
+  "version": "3.0.17",
   "type": "module",
   "description": "Small and fast utility to update package dependencies",
   "author": "Team Juit <developers@juit.com>",
@@ -38,7 +38,7 @@
     "yargs-parser": "^22.0.0"
   },
   "devDependencies": {
-    "@plugjs/build": "^0.6.70",
+    "@plugjs/build": "^0.6.73",
     "@types/ini": "^4.1.1",
     "@types/npm-registry-fetch": "^8.0.9",
     "@types/semver": "^7.7.1",
