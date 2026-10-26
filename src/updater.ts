@@ -86,7 +86,7 @@ class Workspaces {
 export class Updater {
   private _packageData?: PackageData
   private _npmRc?: Record<string, any>
-  private _originalVersion?: string
+  private _originalVersion?: string | false
 
   private _debug: (...args: any[]) => void
   private _children: Updater[]
@@ -130,9 +130,9 @@ export class Updater {
     return this._packageData.name
   }
 
-  get version(): string {
+  get version(): string | null {
     assert(this._packageData, 'Updater not initialized')
-    return this._packageData.version || '0.0.0'
+    return this._packageData.version || null
   }
 
   set version(version: string) {
@@ -175,7 +175,7 @@ export class Updater {
 
     /* Register this package in our workspaces and set the original version */
     if (data.name) this._workspaces.register(data.name, data.version)
-    this._originalVersion = data.version || '0.0.0'
+    this._originalVersion = data.version || false
 
     /* Read up our workspaces */
     if (this._options.workspaces && data.workspaces) {
@@ -205,6 +205,11 @@ export class Updater {
   }
 
   private _bump(): void {
+    if (this._originalVersion === false) {
+      console.log(`${Y}Not bumping version-less package${X}`)
+      return
+    }
+
     assert(this._originalVersion, 'Updater not initialized')
 
     if (this._options.bump) {
